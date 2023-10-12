@@ -48,3 +48,4 @@ out/
 
 #testfiles
 *.mpd_current
+lib_adapter/kodi_backend__/*

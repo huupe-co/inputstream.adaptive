@@ -95,8 +95,9 @@ void CSession::SetSupportedDecrypterURN(std::string& key_system)
     LOG::Log(LOGDEBUG, "DECRYPTERPATH not specified in settings.xml");
     return;
   }
-
-  m_decrypter = DRM::FACTORY::GetDecrypter(GetCryptoKeySystem());
+  //HUUPE
+  //m_decrypter = DRM::FACTORY::GetDecrypter(GetCryptoKeySystem());
+  m_decrypter = nullptr;
   if (!m_decrypter)
     return;
 
@@ -363,8 +364,7 @@ bool CSession::InitializeDRM(bool addDefaultKID /* = false */)
   m_cdmSessions.resize(m_adaptiveTree->m_currentPeriod->GetPSSHSets().size());
 
   // Try to initialize an SingleSampleDecryptor
-  if (m_adaptiveTree->m_currentPeriod->GetEncryptionState() !=
-      EncryptionState::UNENCRYPTED)
+  if (m_adaptiveTree->m_currentPeriod->GetEncryptionState() != EncryptionState::UNENCRYPTED)
   {
     std::string licenseKey{m_kodiProps.m_licenseKey};
 
@@ -393,7 +393,8 @@ bool CSession::InitializeDRM(bool addDefaultKID /* = false */)
         return false;
       }
     }
-    std::string keySystem = m_adaptiveTree->m_supportedKeySystem.substr(9); // Remove prefix "urn:uuid:"
+    std::string keySystem =
+        m_adaptiveTree->m_supportedKeySystem.substr(9); // Remove prefix "urn:uuid:"
     STRING::ReplaceAll(keySystem, "-", "");
     if (keySystem.size() != 32)
     {
@@ -499,7 +500,6 @@ bool CSession::InitializeDRM(bool addDefaultKID /* = false */)
             break;
           }
         }
-
       }
       else if (defaultKid.empty())
       {
@@ -533,14 +533,16 @@ bool CSession::InitializeDRM(bool addDefaultKID /* = false */)
         {
           m_adaptiveTree->m_currentPeriod->RemovePSSHSet(static_cast<std::uint16_t>(ses));
         }
-        else if (session.m_decrypterCaps.flags & DRM::IDecrypter::DecrypterCapabilites::SSD_SECURE_PATH)
+        else if (session.m_decrypterCaps.flags &
+                 DRM::IDecrypter::DecrypterCapabilites::SSD_SECURE_PATH)
         {
           session.m_cdmSessionStr = session.m_cencSingleSampleDecrypter->GetSessionId();
           isSecureVideoSession = true;
 
           if (m_settingNoSecureDecoder && !m_kodiProps.m_isLicenseForceSecureDecoder &&
               !m_adaptiveTree->m_currentPeriod->IsSecureDecodeNeeded())
-            session.m_decrypterCaps.flags &= ~DRM::IDecrypter::DecrypterCapabilites::SSD_SECURE_DECODER;
+            session.m_decrypterCaps.flags &=
+                ~DRM::IDecrypter::DecrypterCapabilites::SSD_SECURE_DECODER;
         }
       }
       else
@@ -568,10 +570,10 @@ bool CSession::InitializePeriod(bool isSessionOpened /* = false */)
   bool isReusePssh{true};
   if (m_adaptiveTree->m_nextPeriod)
   {
-    isPsshChanged =
-        !(m_adaptiveTree->m_currentPeriod->GetPSSHSets() == m_adaptiveTree->m_nextPeriod->GetPSSHSets());
+    isPsshChanged = !(m_adaptiveTree->m_currentPeriod->GetPSSHSets() ==
+                      m_adaptiveTree->m_nextPeriod->GetPSSHSets());
     isReusePssh = !isPsshChanged && m_adaptiveTree->m_nextPeriod->GetEncryptionState() ==
-                                       EncryptionState::ENCRYPTED_SUPPORTED;
+                                        EncryptionState::ENCRYPTED_SUPPORTED;
     m_adaptiveTree->m_currentPeriod = m_adaptiveTree->m_nextPeriod;
     m_adaptiveTree->m_nextPeriod = nullptr;
   }
@@ -806,7 +808,8 @@ void CSession::UpdateStream(CStream& stream)
       stream.m_info.SetCodecFourCC(CODEC::MakeFourCC(CODEC::FOURCC_DVHE));
     }
     else if (CODEC::Contains(codecs, CODEC::FOURCC_VP09, codecStr) ||
-             CODEC::Contains(codecs, CODEC::NAME_VP9, codecStr)) // Some streams incorrectly use the name
+             CODEC::Contains(codecs, CODEC::NAME_VP9,
+                             codecStr)) // Some streams incorrectly use the name
     {
       stream.m_info.SetCodecName(CODEC::NAME_VP9);
       if (STRING::Contains(codecStr, "."))
@@ -834,7 +837,8 @@ void CSession::UpdateStream(CStream& stream)
       }
     }
     else if (CODEC::Contains(codecs, CODEC::FOURCC_AV01, codecStr) ||
-             CODEC::Contains(codecs, CODEC::NAME_AV1, codecStr)) // Some streams incorrectly use the name
+             CODEC::Contains(codecs, CODEC::NAME_AV1,
+                             codecStr)) // Some streams incorrectly use the name
       stream.m_info.SetCodecName(CODEC::NAME_AV1);
     else
     {
@@ -863,7 +867,8 @@ void CSession::UpdateStream(CStream& stream)
     }
     else if (CODEC::Contains(codecs, CODEC::FOURCC_OPUS, codecStr))
       stream.m_info.SetCodecName(CODEC::NAME_OPUS);
-    else if (CODEC::Contains(codecs, CODEC::FOURCC_VORB, codecStr) || // Find "vorb" and "vorbis" case
+    else if (CODEC::Contains(codecs, CODEC::FOURCC_VORB,
+                             codecStr) || // Find "vorb" and "vorbis" case
              CODEC::Contains(codecs, CODEC::FOURCC_VORB1, codecStr) ||
              CODEC::Contains(codecs, CODEC::FOURCC_VORB1P, codecStr) ||
              CODEC::Contains(codecs, CODEC::FOURCC_VORB2, codecStr) ||
@@ -881,7 +886,8 @@ void CSession::UpdateStream(CStream& stream)
   {
     if (CODEC::Contains(codecs, CODEC::FOURCC_TTML, codecStr) ||
         CODEC::Contains(codecs, CODEC::FOURCC_STPP, codecStr))
-      stream.m_info.SetCodecName(CODEC::NAME_SRT); // We convert it to SRT, Kodi dont support TTML yet
+      stream.m_info.SetCodecName(
+          CODEC::NAME_SRT); // We convert it to SRT, Kodi dont support TTML yet
     else if (CODEC::Contains(codecs, CODEC::FOURCC_WVTT, codecStr))
       stream.m_info.SetCodecName(CODEC::NAME_WEBVTT);
     else
@@ -1270,8 +1276,8 @@ void CSession::OnSegmentChangedRead(CStream* stream)
       adaptive::AdaptiveStream& adStream = stream->m_adStream;
 
       m_adaptiveTree->InsertLiveSegment(adStream.getPeriod(), adStream.getAdaptationSet(),
-                                        adStream.getRepresentation(), adStream.getSegmentPos(),
-                                        0, duration, sr->GetTimeScale());
+                                        adStream.getRepresentation(), adStream.getSegmentPos(), 0,
+                                        duration, sr->GetTimeScale());
     }
   }
 }
@@ -1344,7 +1350,7 @@ int CSession::GetChapter() const
 int CSession::GetChapterCount() const
 {
   if (m_adaptiveTree && m_adaptiveTree->m_periods.size() > 1)
-      return static_cast<int>(m_adaptiveTree->m_periods.size());
+    return static_cast<int>(m_adaptiveTree->m_periods.size());
 
   return 0;
 }

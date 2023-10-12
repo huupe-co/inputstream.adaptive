@@ -7,9 +7,12 @@ subdir('parser')
 subdir('samplereader')
 subdir('utils')
 
+subdir('codechandler')
+subdir('addon_init')
+
 input_adaptive_sources += files(
   'AdaptiveByteStream.cpp',
-  # 'main.cpp',
+  'InputAdaptiveMain.cpp',
   'oscompat.cpp',
   'Session.cpp',
   'Stream.cpp',
@@ -18,3 +21,8 @@ input_adaptive_sources += files(
   'ADTSReader.cpp',
   'WebmReader.cpp',
 )
+
+input_adaptive_export_includes = [
+  include_directories('.'),
+  include_directories('addon_init')
+]

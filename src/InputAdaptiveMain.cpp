@@ -6,7 +6,7 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include "main.h"
+#include "InputAdaptiveMain.h"
 
 #include "ADTSReader.h"
 #include "Stream.h"
@@ -95,8 +95,9 @@ bool CInputStreamAdaptive::GetStreamIds(std::vector<unsigned int>& ids)
       }
 
       uint8_t cdmId(static_cast<uint8_t>(stream->m_adStream.getRepresentation()->m_psshSetPos));
-      if (stream->m_isValid && (m_session->GetMediaTypeMask() &
-                                static_cast<uint8_t>(1) << static_cast<int>(stream->m_adStream.GetStreamType())))
+      if (stream->m_isValid &&
+          (m_session->GetMediaTypeMask() &
+           static_cast<uint8_t>(1) << static_cast<int>(stream->m_adStream.GetStreamType())))
       {
         if (m_session->GetMediaTypeMask() != 0xFF)
         {
@@ -167,9 +168,9 @@ bool CInputStreamAdaptive::GetStream(int streamid, kodi::addon::InputstreamInfo&
         stream->m_info.SetFeatures(0);
 
       cryptoSession.SetFlags((m_session->GetDecrypterCaps(cdmId).flags &
-                          DRM::IDecrypter::DecrypterCapabilites::SSD_SECURE_DECODER)
-                             ? STREAM_CRYPTO_FLAG_SECURE_DECODER
-                             : 0);
+                              DRM::IDecrypter::DecrypterCapabilites::SSD_SECURE_DECODER)
+                                 ? STREAM_CRYPTO_FLAG_SECURE_DECODER
+                                 : 0);
       stream->m_info.SetCryptoSession(cryptoSession);
     }
 
@@ -385,7 +386,8 @@ bool CInputStreamAdaptive::OpenStream(int streamid)
   }
   else
   {
-    LOG::LogF(LOGWARNING, "Unhandled stream container for representation ID: %s", rep->GetId().data());
+    LOG::LogF(LOGWARNING, "Unhandled stream container for representation ID: %s",
+              rep->GetId().data());
     m_session->EnableStream(stream, false);
     return false;
   }
@@ -507,8 +509,8 @@ DEMUX_PACKET* CInputStreamAdaptive::DemuxRead(void)
   if (m_session->SeekChapter(m_session->GetChapter() + 1))
   {
     m_checkChapterSeek = true;
-    for (unsigned int i(1);
-         i <= INPUTSTREAM_MAX_STREAM_COUNT && i <= m_session->GetStreamCount(); ++i)
+    for (unsigned int i(1); i <= INPUTSTREAM_MAX_STREAM_COUNT && i <= m_session->GetStreamCount();
+         ++i)
       EnableStream(i + m_session->GetPeriodId() * 1000, false);
     m_session->InitializePeriod();
     DEMUX_PACKET* p = AllocateDemuxPacket(0);
@@ -539,7 +541,7 @@ void CInputStreamAdaptive::SetVideoResolution(unsigned int width,
 
   // This can be called just after CInputStreamAdaptive::Open callback
   if (m_session)
-     m_session->SetVideoResolution(width, height, maxWidth, maxHeight);
+    m_session->SetVideoResolution(width, height, maxWidth, maxHeight);
 }
 
 bool CInputStreamAdaptive::PosTime(int ms)
@@ -637,7 +639,7 @@ bool CVideoCodecAdaptive::Open(const kodi::addon::VideoCodecInitdata& initData)
 {
   if (!m_session || !m_session->GetDecrypter())
     return false;
- 
+
   if ((initData.GetCodecType() == VIDEOCODEC_H264 || initData.GetCodecType() == VIDEOCODEC_AV1) &&
       !initData.GetExtraDataSize() && !(m_state & STATE_WAIT_EXTRADATA))
   {
@@ -672,8 +674,7 @@ bool CVideoCodecAdaptive::Open(const kodi::addon::VideoCodecInitdata& initData)
   std::string sessionId(initData.GetCryptoSession().GetSessionId());
   Adaptive_CencSingleSampleDecrypter* ssd(m_session->GetSingleSampleDecrypter(sessionId));
 
-  return m_session->GetDecrypter()->OpenVideoDecoder(
-      ssd, initData.GetCStructure());
+  return m_session->GetDecrypter()->OpenVideoDecoder(ssd, initData.GetCStructure());
 }
 
 bool CVideoCodecAdaptive::Reconfigure(const kodi::addon::VideoCodecInitdata& initData)
