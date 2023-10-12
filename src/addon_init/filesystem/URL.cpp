@@ -8,7 +8,7 @@
 
 #include "URL.h"
 
-#include "FileItem.h"
+//#include "FileItem.h"
 //#include "Util.h"
 #include "filesystem/File.h"
 #include "utils/StringUtils.h"
@@ -95,30 +95,30 @@ void CURL::Parse(std::string strURL1)
         return;
       }
       iPos += extLen + 1;
-      std::string archiveName = strURL.substr(0, iPos);
-      struct __stat64 s;
-      if (XFILE::CFile::Stat(archiveName, &s) == 0)
-      {
-#ifdef TARGET_POSIX
-        if (!S_ISDIR(s.st_mode))
-#else
-        if (!(s.st_mode & S_IFDIR))
-#endif
-        {
-          archiveName = Encode(archiveName);
-          if (is_apk)
-          {
-            CURL c("apk://" + archiveName + "/" + std::move(strURL).substr(iPos + 1));
-            *this = c;
-          }
-          else
-          {
-            CURL c("zip://" + archiveName + "/" + std::move(strURL).substr(iPos + 1));
-            *this = c;
-          }
-          return;
-        }
-      }
+      //       std::string archiveName = strURL.substr(0, iPos);
+      //       struct __stat64 s;
+      //       if (XFILE::CFile::Stat(archiveName, &s) == 0)
+      //       {
+      // #ifdef TARGET_POSIX
+      //         if (!S_ISDIR(s.st_mode))
+      // #else
+      //         if (!(s.st_mode & S_IFDIR))
+      // #endif
+      //         {
+      //           archiveName = Encode(archiveName);
+      //           if (is_apk)
+      //           {
+      //             CURL c("apk://" + archiveName + "/" + std::move(strURL).substr(iPos + 1));
+      //             *this = c;
+      //           }
+      //           else
+      //           {
+      //             CURL c("zip://" + archiveName + "/" + std::move(strURL).substr(iPos + 1));
+      //             *this = c;
+      //           }
+      //           return;
+      //         }
+      //       }
     }
   }
   else

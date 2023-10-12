@@ -10,7 +10,7 @@
 
 #include "URL.h"
 #include "filesystem/File.h"
-#include "utils/AliasShortcutUtils.h"
+// #include "utils/AliasShortcutUtils.h"
 #include "utils/log.h"
 
 #include <algorithm>
@@ -40,8 +40,8 @@ CPosixFile::~CPosixFile()
 static std::string getFilename(const CURL& url)
 {
   std::string filename(url.GetFileName());
-  if (IsAliasShortcut(filename, false))
-    TranslateAliasShortcut(filename);
+  // if (IsAliasShortcut(filename, false))
+  //   TranslateAliasShortcut(filename);
 
   return filename;
 }
@@ -62,7 +62,7 @@ bool CPosixFile::Open(const CURL& url)
   return m_fd != -1;
 }
 
-bool CPosixFile::OpenForWrite(const CURL& url, bool bOverWrite /* = false*/ )
+bool CPosixFile::OpenForWrite(const CURL& url, bool bOverWrite /* = false*/)
 {
   if (m_fd >= 0)
     return false;
@@ -71,7 +71,8 @@ bool CPosixFile::OpenForWrite(const CURL& url, bool bOverWrite /* = false*/ )
   if (filename.empty())
     return false;
 
-  m_fd = open(filename.c_str(), O_RDWR | O_CREAT | (bOverWrite ? O_TRUNC : 0), S_IWUSR | S_IRUSR | S_IRGRP | S_IWGRP | S_IROTH);
+  m_fd = open(filename.c_str(), O_RDWR | O_CREAT | (bOverWrite ? O_TRUNC : 0),
+              S_IWUSR | S_IRUSR | S_IRGRP | S_IWGRP | S_IROTH);
   if (m_fd < 0)
     return false;
 
@@ -170,8 +171,8 @@ int64_t CPosixFile::Seek(int64_t iFilePosition, int iWhence /* = SEEK_SET*/)
   //! @todo properly support with detection in configure
   //! Android special case: Android doesn't substitute off64_t for off_t and similar functions
   m_filePos = lseek64(m_fd, (off64_t)iFilePosition, iWhence);
-#else  // !TARGET_ANDROID
-  const off_t filePosOffT = (off_t) iFilePosition;
+#else // !TARGET_ANDROID
+  const off_t filePosOffT = (off_t)iFilePosition;
   // check for parameter overflow
   if (sizeof(int64_t) != sizeof(off_t) && iFilePosition != filePosOffT)
     return -1;
@@ -187,7 +188,7 @@ int CPosixFile::Truncate(int64_t size)
   if (m_fd < 0)
     return -1;
 
-  const off_t sizeOffT = (off_t) size;
+  const off_t sizeOffT = (off_t)size;
   // check for parameter overflow
   if (sizeof(int64_t) != sizeof(off_t) && size != sizeOffT)
     return -1;
@@ -231,7 +232,7 @@ int CPosixFile::IoControl(EIoControl request, void* param)
 
   if (request == IOCTRL_NATIVE)
   {
-    if(!param)
+    if (!param)
       return -1;
     return ioctl(m_fd, ((SNativeIoControl*)param)->request, ((SNativeIoControl*)param)->param);
   }
@@ -338,9 +339,9 @@ int CPosixFile::Stat(const CURL& url, struct __stat64* buffer)
   if (filename.empty() || !buffer)
     return -1;
 
-// Use statx to get file creation date (btime) which isn't available with just stat. This fills the
-// buffer with the same data as the Windows implementation. Useful for the music library so that
-// tags can be updated without changing the date they were added to the library (as m/ctime does)
+    // Use statx to get file creation date (btime) which isn't available with just stat. This fills the
+    // buffer with the same data as the Windows implementation. Useful for the music library so that
+    // tags can be updated without changing the date they were added to the library (as m/ctime does)
 
 #if defined(HAVE_STATX)
   int dirfd = AT_FDCWD;

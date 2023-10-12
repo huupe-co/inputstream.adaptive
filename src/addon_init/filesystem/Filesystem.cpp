@@ -1,10 +1,9 @@
 #include "Filesystem.h"
 
-#include "FileItem.h"
+// #include "FileItem.h"
 //#include "Util.h"
 //#include "addons/binary-addons/AddonDll.h"
-#include "CurlFile.h"
-#include "Directory.h"
+// #include "CurlFile.h"
 #include "File.h"
 //#include "filesystem/SpecialProtocol.h"
 //#include "platform/Filesystem.h"
@@ -14,8 +13,14 @@
 //#include "utils/URIUtils.h"
 //#include "utils/log.h"
 
+#include <filesystem>
+
+#include <sys/stat.h>
+
 using namespace kodi; // addon-dev-kit namespace
 using namespace XFILE;
+
+namespace fs = std::filesystem;
 
 void Interface_Filesystem::Init(AddonGlobalInterface* addonInterface)
 {
@@ -116,44 +121,52 @@ unsigned int Interface_Filesystem::TranslateFileReadBitsToKodi(unsigned int addo
 
 bool Interface_Filesystem::can_open_directory(void* kodiBase, const char* url)
 {
-  CFileItemList items;
-  return CDirectory::GetDirectory(url, items, "", DIR_FLAG_DEFAULTS | DIR_FLAG_BYPASS_CACHE);
+  return true;
 }
 
 bool Interface_Filesystem::create_directory(void* kodiBase, const char* path)
 {
-  return CDirectory::Create(path);
+  return fs::create_directories(path);
 }
 
 bool Interface_Filesystem::directory_exists(void* kodiBase, const char* path)
 {
-  return CDirectory::Exists(path, false);
+  return fs::exists(path);
 }
 
 bool Interface_Filesystem::remove_directory(void* kodiBase, const char* path)
 {
-  // Empty directory
-  CFileItemList fileItems;
-  CDirectory::GetDirectory(path, fileItems, "", DIR_FLAG_NO_FILE_DIRS | DIR_FLAG_BYPASS_CACHE);
-  for (int i = 0; i < fileItems.Size(); ++i)
-    CFile::Delete(fileItems.Get(i)->GetPath());
+  if (fs::is_directory(path))
+  {
+    for (auto& child : fs::directory_iterator(path))
+    {
+      fs::remove(child.path());
+    }
+  }
 
-  return CDirectory::Remove(path);
+  return fs::remove(path);
 }
 
 bool Interface_Filesystem::remove_directory_recursive(void* kodiBase, const char* path)
 {
-  return CDirectory::RemoveRecursive(path);
+  if (fs::is_directory(path))
+  {
+    fs::remove_all(path);
+  }
+
+  return true;
 }
 
-static void CFileItemListToVFSDirEntries(VFSDirEntry* entries, const CFileItemList& items)
+static void CFileItemListToVFSDirEntries(VFSDirEntry* entries,
+                                         std::vector<fs::directory_entry> items)
 {
-  for (unsigned int i = 0; i < static_cast<unsigned int>(items.Size()); ++i)
+  for (unsigned int i = 0; i < static_cast<unsigned int>(items.size()); ++i)
   {
-    //entries[i].label = strdup(items[i]->GetLabel().c_str());
-    entries[i].path = strdup(items[i]->GetPath().c_str());
-    entries[i].size = items[i]->m_dwSize;
-    entries[i].folder = items[i]->m_bIsFolder;
+    entries[i].label = strdup(items[i].path().filename().c_str());
+    std::string path = items[i].path();
+    entries[i].path = strdup(path.c_str());
+    entries[i].size = items[i].file_size();
+    entries[i].folder = items[i].is_directory();
     //items[i]->m_dateTime.GetAsTime(entries[i].date_time);
   }
 }
@@ -164,25 +177,25 @@ bool Interface_Filesystem::get_directory(void* kodiBase,
                                          struct VFSDirEntry** items,
                                          unsigned int* num_items)
 {
-
-  CFileItemList fileItems;
-  if (!CDirectory::GetDirectory(path, fileItems, mask,
-                                DIR_FLAG_NO_FILE_DIRS | DIR_FLAG_BYPASS_CACHE))
-    return false;
-
-  if (fileItems.Size() > 0)
+  if (fs::is_directory(path))
   {
-    *num_items = static_cast<unsigned int>(fileItems.Size());
-    *items = new VFSDirEntry[fileItems.Size()];
-    CFileItemListToVFSDirEntries(*items, fileItems);
+    std::vector<fs::directory_entry> fileItems;
+    for (const fs::directory_entry& child : fs::directory_iterator(path))
+    {
+      fileItems.push_back(child);
+    }
+    if (fileItems.size() > 0)
+    {
+      *num_items = static_cast<unsigned int>(fileItems.size());
+      *items = new VFSDirEntry[fileItems.size()];
+      CFileItemListToVFSDirEntries(*items, fileItems);
+    }
+    else
+    {
+      *num_items = 0;
+      *items = nullptr;
+    }
   }
-  else
-  {
-    *num_items = 0;
-    *items = nullptr;
-  }
-
-  return true;
 }
 
 void Interface_Filesystem::free_directory(void* kodiBase,
@@ -202,7 +215,7 @@ void Interface_Filesystem::free_directory(void* kodiBase,
 bool Interface_Filesystem::file_exists(void* kodiBase, const char* filename, bool useCache)
 {
 
-  return CFile::Exists(filename, useCache);
+  return fs::exists(filename);
 }
 
 bool Interface_Filesystem::stat_file(void* kodiBase,
@@ -210,8 +223,9 @@ bool Interface_Filesystem::stat_file(void* kodiBase,
                                      struct STAT_STRUCTURE* buffer)
 {
 
-  struct __stat64 statBuffer;
-  if (CFile::Stat(filename, &statBuffer) != 0)
+  struct stat64 statBuffer;
+
+  if (stat64(filename, &statBuffer) != 0)
     return false;
 
   buffer->deviceId = statBuffer.st_dev;
@@ -233,19 +247,21 @@ bool Interface_Filesystem::stat_file(void* kodiBase,
 
 bool Interface_Filesystem::delete_file(void* kodiBase, const char* filename)
 {
-  return CFile::Delete(filename);
+  return fs::remove(filename);
 }
 
 bool Interface_Filesystem::rename_file(void* kodiBase,
                                        const char* filename,
                                        const char* newFileName)
 {
-  return CFile::Rename(filename, newFileName);
+  std::error_code ec;
+  fs::rename(filename, newFileName, ec);
+  return (bool)ec;
 }
 
 bool Interface_Filesystem::copy_file(void* kodiBase, const char* filename, const char* dest)
 {
-  return CFile::Copy(filename, dest);
+  return fs::copy_file(filename, dest);
 }
 
 char* Interface_Filesystem::get_file_md5(void* kodiBase, const char* filename)
@@ -334,13 +350,13 @@ bool Interface_Filesystem::get_mime_type(void* kodiBase,
                                          const char* useragent)
 {
 
-  std::string kodiContent;
-  bool ret = XFILE::CCurlFile::GetMimeType(CURL(url), kodiContent, useragent);
-  if (ret && !kodiContent.empty())
-  {
-    *content = strdup(kodiContent.c_str());
-  }
-  return ret;
+  // std::string kodiContent;
+  // bool ret = XFILE::CCurlFile::GetMimeType(CURL(url), kodiContent, useragent);
+  // if (ret && !kodiContent.empty())
+  // {
+  //   *content = strdup(kodiContent.c_str());
+  // }
+  return false;
 }
 
 bool Interface_Filesystem::get_content_type(void* kodiBase,
@@ -348,32 +364,33 @@ bool Interface_Filesystem::get_content_type(void* kodiBase,
                                             char** content,
                                             const char* useragent)
 {
-  std::string kodiContent;
-  bool ret = XFILE::CCurlFile::GetContentType(CURL(url), kodiContent, useragent);
-  if (ret && !kodiContent.empty())
-  {
-    *content = strdup(kodiContent.c_str());
-  }
-  return ret;
+  // std::string kodiContent;
+  // bool ret = XFILE::CCurlFile::GetContentType(CURL(url), kodiContent, useragent);
+  // if (ret && !kodiContent.empty())
+  // {
+  //   *content = strdup(kodiContent.c_str());
+  // }
+  return false;
 }
 
 bool Interface_Filesystem::get_cookies(void* kodiBase, const char* url, char** cookies)
 {
-  std::string kodiCookies;
-  bool ret = XFILE::CCurlFile::GetCookies(CURL(url), kodiCookies);
-  if (ret && !kodiCookies.empty())
-  {
-    *cookies = strdup(kodiCookies.c_str());
-  }
-  return ret;
+  // std::string kodiCookies;
+  // bool ret = XFILE::CCurlFile::GetCookies(CURL(url), kodiCookies);
+  // if (ret && !kodiCookies.empty())
+  // {
+  //   *cookies = strdup(kodiCookies.c_str());
+  // }
+  return false;
 }
 
 bool Interface_Filesystem::get_http_header(void* kodiBase,
                                            const char* url,
                                            struct KODI_HTTP_HEADER* headers)
 {
-  CHttpHeader* httpHeader = static_cast<CHttpHeader*>(headers->handle);
-  return XFILE::CCurlFile::GetHttpHeader(CURL(url), *httpHeader);
+  // CHttpHeader* httpHeader = static_cast<CHttpHeader*>(headers->handle);
+  // return XFILE::CCurlFile::GetHttpHeader(CURL(url), *httpHeader);
+  return false;
 }
 
 //------------------------------------------------------------------------------

@@ -60,7 +60,7 @@ private:
 };
 
 /// \brief DateTime class, which uses FileTime as it's base.
-class CDateTime final : public IArchivable
+class CDateTime //final : public IArchivable
 {
 public:
   CDateTime();
@@ -136,7 +136,7 @@ public:
 
   operator KODI::TIME::FileTime() const;
 
-  void Archive(CArchive& ar) override;
+  //void Archive(CArchive& ar) override;
 
   void Reset();
 
@@ -183,12 +183,12 @@ public:
   std::string GetAsDBDateTime() const;
   std::string GetAsDBDate() const;
   std::string GetAsDBTime() const;
-  std::string GetAsLocalizedDate(bool longDate = false) const;
-  std::string GetAsLocalizedDate(const std::string& strFormat) const;
-  std::string GetAsLocalizedDate(const std::string& strFormat, ReturnFormat returnFormat) const;
-  std::string GetAsLocalizedTime(const std::string& format, bool withSeconds = true) const;
-  std::string GetAsLocalizedDateTime(bool longDate = false, bool withSeconds = true) const;
-  std::string GetAsLocalizedTime(TIME_FORMAT format, bool withSeconds = false) const;
+  //std::string GetAsLocalizedDate(bool longDate = false) const;
+  //std::string GetAsLocalizedDate(const std::string& strFormat) const;
+  //std::string GetAsLocalizedDate(const std::string& strFormat, ReturnFormat returnFormat) const;
+  //std::string GetAsLocalizedTime(const std::string& format, bool withSeconds = true) const;
+  //std::string GetAsLocalizedDateTime(bool longDate = false, bool withSeconds = true) const;
+  //std::string GetAsLocalizedTime(TIME_FORMAT format, bool withSeconds = false) const;
   std::string GetAsRFC1123DateTime() const;
   std::string GetAsW3CDate() const;
   std::string GetAsW3CDateTime(bool asUtc = false) const;

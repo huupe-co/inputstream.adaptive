@@ -1338,10 +1338,10 @@ CDateTime CDateTime::FromRFC1123DateTime(const std::string& dateTime)
 //   return GetAsLocalizedDate(g_langInfo.GetDateFormat(longDate));
 // }
 
-std::string CDateTime::GetAsLocalizedDate(const std::string& strFormat) const
-{
-  return GetAsLocalizedDate(strFormat, ReturnFormat::CHOICE_NO);
-}
+// std::string CDateTime::GetAsLocalizedDate(const std::string& strFormat) const
+// {
+//   return GetAsLocalizedDate(strFormat, ReturnFormat::CHOICE_NO);
+// }
 
 // std::string CDateTime::GetAsLocalizedDate(const std::string& strFormat,
 //                                           ReturnFormat returnFormat) const
@@ -1508,11 +1508,11 @@ std::string CDateTime::GetAsLocalizedDate(const std::string& strFormat) const
 //   return (returnFormat == ReturnFormat::CHOICE_YES ? fmtOut : strOut);
 // }
 
-std::string CDateTime::GetAsLocalizedDateTime(bool longDate /*=false*/,
-                                              bool withSeconds /*=true*/) const
-{
-  return GetAsLocalizedDate(longDate) + ' ' + GetAsLocalizedTime("", withSeconds);
-}
+// std::string CDateTime::GetAsLocalizedDateTime(bool longDate /*=false*/,
+//                                               bool withSeconds /*=true*/) const
+// {
+//   return GetAsLocalizedDate(longDate) + ' ' + GetAsLocalizedTime("", withSeconds);
+// }
 
 // std::string CDateTime::GetAsLocalizedTime(TIME_FORMAT format, bool withSeconds /* = false */) const
 // {
