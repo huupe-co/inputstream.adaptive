@@ -78,13 +78,19 @@ CSession::~CSession()
   m_streams.clear();
   DisposeDecrypter();
 
-  m_adaptiveTree->Uninitialize();
+  if (m_adaptiveTree)
+  {
+    m_adaptiveTree->Uninitialize();
 
-  delete m_adaptiveTree;
-  m_adaptiveTree = nullptr;
+    delete m_adaptiveTree;
+    m_adaptiveTree = nullptr;
+  }
 
-  delete m_reprChooser;
-  m_reprChooser = nullptr;
+  if (m_reprChooser)
+  {
+    delete m_reprChooser;
+    m_reprChooser = nullptr;
+  }
 }
 
 void CSession::SetSupportedDecrypterURN(std::string& key_system)

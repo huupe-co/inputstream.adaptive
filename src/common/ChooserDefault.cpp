@@ -8,9 +8,9 @@
 
 #include "ChooserDefault.h"
 
+#include "ReprSelector.h"
 #include "utils/SettingsUtils.h"
 #include "utils/log.h"
-#include "ReprSelector.h"
 
 #include <algorithm>
 #include <cmath>

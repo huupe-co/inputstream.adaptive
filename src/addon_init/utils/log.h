@@ -18,6 +18,8 @@
 
 #include <utility>
 
+#include <fmt/core.h>
+
 // To keep in sync with SSDLogLevel on SSD_dll.h
 enum LogLevel
 {
@@ -90,8 +92,10 @@ inline void Log(const LogLevel level, const char* format, Args&&... args)
 namespace CLog
 {
 template<typename... Args>
-inline void Log(const LogLevel level, const char* format, Args&&... args)
+inline void Log(const LogLevel level, fmt::format_string<Args...> fmt, Args&&... args)
 {
-  LOG::Log(level, format, std::forward<Args>(args)...);
+  auto message = fmt::format(fmt, std::forward<Args>(args)...);
+  LOG::Log(level, message.c_str(), std::forward<Args>(args)...);
+  //LOG::Log(level, message, std::forward<Args>(args)...);
 }
 } // namespace CLog

@@ -3,6 +3,8 @@
 #include "filesystem/Filesystem.h"
 
 #include <kodi/addon-instance/Inputstream.h>
+#include <kodi/c-api/gui/definitions.h>
+#include <kodi/c-api/gui/general.h>
 
 struct FuncTable
 {
@@ -70,6 +72,11 @@ void initAddon(const initAddonParams& params)
 
   Interface_Filesystem::Init(&addonInterface);
   kodi::addon::CPrivateBase::m_interface = &addonInterface;
+
+  toKodi.kodi_gui = new AddonToKodiFuncTable_kodi_gui();
+  toKodi.kodi_gui->general = new AddonToKodiFuncTable_kodi_gui_general();
+  toKodi.kodi_gui->general->get_adjust_refresh_rate_status = [](const KODI_ADDON_BACKEND_HDL hdl)
+  { return ADJUST_REFRESHRATE_STATUS_OFF; };
 }
 
 
@@ -118,6 +125,31 @@ bool FuncTable::is_setting_using_default(const KODI_ADDON_BACKEND_HDL hdl, const
   return true;
 }
 
+/*
+std::pair<int, int> res;
+  if (SETTINGS::ParseResolutionLimit(kodi::addon::GetSettingString("adaptivestream.res.max"), res))
+  {
+    m_screenResMax = res;
+  }
+  if (SETTINGS::ParseResolutionLimit(kodi::addon::GetSettingString("adaptivestream.res.secure.max"),
+                                     res))
+  {
+    m_screenResSecureMax = res;
+  }
+
+  m_bandwidthInitAuto = kodi::addon::GetSettingBoolean("adaptivestream.bandwidth.init.auto");
+  m_bandwidthInit =
+      static_cast<uint32_t>(kodi::addon::GetSettingInt("adaptivestream.bandwidth.init") * 1000);
+
+  m_bandwidthMin =
+      static_cast<uint32_t>(kodi::addon::GetSettingInt("adaptivestream.bandwidth.min") * 1000);
+  m_bandwidthMax =
+      static_cast<uint32_t>(kodi::addon::GetSettingInt("adaptivestream.bandwidth.max") * 1000);
+
+  m_ignoreScreenRes = kodi::addon::GetSettingBoolean("overrides.ignore.screen.res");
+  m_ignoreScreenResChange = kodi::addon::GetSettingBoolean("overrides.ignore.screen.res.change");
+*/
+
 bool FuncTable::get_setting_bool(const KODI_ADDON_BACKEND_HDL hdl, const char* id, bool* value)
 {
   return false;
@@ -135,8 +167,18 @@ bool FuncTable::get_setting_float(const KODI_ADDON_BACKEND_HDL hdl, const char* 
 
 bool FuncTable::get_setting_string(const KODI_ADDON_BACKEND_HDL hdl, const char* id, char** value)
 {
+  std::map<std::string, std::string> values = {{"adaptivestream.res.max", "1080p"},
+                                               {"adaptivestream.res.secure.max", "640p"}};
+  if (values.contains(id))
+  {
+    auto val = values[id];
+    *value = (char*)malloc(val.size() + 1);
+    strcpy(*value, val.c_str());
+    return true;
+  }
   return false;
 }
+
 
 bool FuncTable::set_setting_bool(const KODI_ADDON_BACKEND_HDL hdl, const char* id, bool value)
 {
