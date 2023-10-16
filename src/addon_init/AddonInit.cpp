@@ -36,12 +36,12 @@ struct FuncTable
 };
 
 static initAddonParams globalParams;
+static AddonGlobalInterface addonInterface;
+static AddonToKodiFuncTable_Addon toKodi;
 
 void initAddon(const initAddonParams& params)
 {
   globalParams = params;
-  static AddonGlobalInterface addonInterface;
-  static AddonToKodiFuncTable_Addon toKodi;
   addonInterface.toKodi = &toKodi;
   //toKodi.kodiBase = addon;
   toKodi.addon_log_msg = FuncTable::addon_log_msg;

@@ -22,38 +22,63 @@
 
 #include <stdarg.h> // va_list, va_start, va_arg, va_end
 
+#include <malloc.h>
+
 using namespace PLAYLIST;
 using namespace SESSION;
 using namespace UTILS;
 
-CInputStreamAdaptive::CInputStreamAdaptive(const kodi::addon::IInstanceInfo& instance)
-  : CInstanceInputStream(instance)
+CInputStreamAdaptive::CInputStreamAdaptive()
+//: CInstanceInputStream(instance)
 {
 }
 
-ADDON_STATUS CInputStreamAdaptive::CreateInstance(const kodi::addon::IInstanceInfo& instance,
-                                                  KODI_ADDON_INSTANCE_HDL& hdl)
-{
-  if (instance.IsType(ADDON_INSTANCE_VIDEOCODEC))
-  {
-    hdl = new CVideoCodecAdaptive(instance, this);
-    return ADDON_STATUS_OK;
-  }
-  return ADDON_STATUS_NOT_IMPLEMENTED;
-}
+// ADDON_STATUS CInputStreamAdaptive::CreateInstance(const kodi::addon::IInstanceInfo& instance,
+//                                                   KODI_ADDON_INSTANCE_HDL& hdl)
+// {
+//   if (instance.IsType(ADDON_INSTANCE_VIDEOCODEC))
+//   {
+//     hdl = new CVideoCodecAdaptive(instance, this);
+//     return ADDON_STATUS_OK;
+//   }
+//   return ADDON_STATUS_NOT_IMPLEMENTED;
+// }
 
-bool CInputStreamAdaptive::Open(const kodi::addon::InputstreamProperty& props)
+// bool CInputStreamAdaptive::Open(const kodi::addon::InputstreamProperty& props)
+// {
+//   LOG::Log(LOGDEBUG, "Open()");
+
+//   std::string url = props.GetURL();
+//   m_kodiProps = PROPERTIES::ParseKodiProperties(props.GetProperties());
+
+//   std::uint8_t drmConfig{0};
+//   if (m_kodiProps.m_isLicensePersistentStorage)
+//     drmConfig |= DRM::IDecrypter::CONFIG_PERSISTENTSTORAGE;
+
+//   m_session = std::make_shared<CSession>(m_kodiProps, url, props.GetProfileFolder());
+//   m_session->SetVideoResolution(m_currentVideoWidth, m_currentVideoHeight, m_currentVideoMaxWidth,
+//                                 m_currentVideoMaxHeight);
+
+//   m_session->SetDrmConfig(drmConfig);
+//   if (!m_session->Initialize())
+//   {
+//     m_session = nullptr;
+//     return false;
+//   }
+//   return true;
+// }
+
+bool CInputStreamAdaptive::Open(const std::string url, std::map<std::string, std::string> props)
 {
   LOG::Log(LOGDEBUG, "Open()");
 
-  std::string url = props.GetURL();
-  m_kodiProps = PROPERTIES::ParseKodiProperties(props.GetProperties());
+  m_kodiProps = PROPERTIES::ParseKodiProperties(props);
 
   std::uint8_t drmConfig{0};
   if (m_kodiProps.m_isLicensePersistentStorage)
     drmConfig |= DRM::IDecrypter::CONFIG_PERSISTENTSTORAGE;
 
-  m_session = std::make_shared<CSession>(m_kodiProps, url, props.GetProfileFolder());
+  m_session = std::make_shared<CSession>(m_kodiProps, url, "/mnt/data/");
   m_session->SetVideoResolution(m_currentVideoWidth, m_currentVideoHeight, m_currentVideoMaxWidth,
                                 m_currentVideoMaxHeight);
 
@@ -731,10 +756,114 @@ ADDON_STATUS CMyAddon::CreateInstance(const kodi::addon::IInstanceInfo& instance
 {
   if (instance.IsType(ADDON_INSTANCE_INPUTSTREAM))
   {
-    hdl = new CInputStreamAdaptive(instance);
+    //hdl = new CInputStreamAdaptive(instance);
     return ADDON_STATUS_OK;
   }
   return ADDON_STATUS_NOT_IMPLEMENTED;
 }
 
 ADDONCREATOR(CMyAddon);
+
+#define AV_INPUT_BUFFER_PADDING_SIZE 64
+
+namespace KODI
+{
+namespace MEMORY
+{
+
+void* AlignedMalloc(size_t s, size_t alignTo)
+{
+  return static_cast<void*>(std::aligned_alloc(alignTo, s));
+  // return _aligned_malloc(s, alignTo);
+}
+
+void AlignedFree(void* p)
+{
+  //_aligned_free(p);
+  std::free(p);
+}
+
+} // namespace MEMORY
+} // namespace KODI
+
+
+void FreeDemuxPacket(DEMUX_PACKET* pPacket)
+{
+  if (pPacket)
+  {
+    if (pPacket->pData)
+      KODI::MEMORY::AlignedFree(pPacket->pData);
+    if (pPacket->iSideDataElems)
+    {
+      // AVPacket* avPkt = av_packet_alloc();
+      // if (!avPkt)
+      // {
+      //   CLog::Log(LOGERROR, "CDVDDemuxUtils::{} - av_packet_alloc failed: {}", __FUNCTION__,
+      //             strerror(errno));
+      // }
+      // else
+      // {
+      //   avPkt->side_data = static_cast<AVPacketSideData*>(pPacket->pSideData);
+      //   avPkt->side_data_elems = pPacket->iSideDataElems;
+
+      //   //! @todo: properly handle avpkt side_data. this works around our improper use of the side_data
+      //   // as we pass pointers to ffmpeg allocated memory for the side_data. we should really be allocating
+      //   // and storing our own AVPacket. This will require some extensive changes.
+
+      //   // here we make use of ffmpeg to free the side_data, we shouldn't have to allocate an intermediate AVPacket though
+      //   av_packet_free(&avPkt);
+    }
+  }
+  if (pPacket->cryptoInfo)
+  {
+    delete pPacket->cryptoInfo->clearBytes;
+    delete pPacket->cryptoInfo->cipherBytes;
+    delete pPacket->cryptoInfo;
+  }
+  delete pPacket;
+}
+
+DEMUX_PACKET* AllocateDemuxPacket(int iDataSize)
+{
+  DEMUX_PACKET* pPacket = new DEMUX_PACKET();
+
+  if (iDataSize > 0)
+  {
+    // need to allocate a few bytes more.
+    // From avcodec.h (ffmpeg)
+    /**
+     * Required number of additionally allocated bytes at the end of the input bitstream for decoding.
+     * this is mainly needed because some optimized bitstream readers read
+     * 32 or 64 bit at once and could read over the end<br>
+     * Note, if the first 23 bits of the additional bytes are not 0 then damaged
+     * MPEG bitstreams could cause overread and segfault
+     */
+    pPacket->pData = static_cast<uint8_t*>(
+        KODI::MEMORY::AlignedMalloc(iDataSize + AV_INPUT_BUFFER_PADDING_SIZE, 16));
+    if (!pPacket->pData)
+    {
+      FreeDemuxPacket(pPacket);
+      return NULL;
+    }
+
+    // reset the last 8 bytes to 0;
+    memset(pPacket->pData + iDataSize, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+  }
+
+  return pPacket;
+}
+
+DEMUX_PACKET* AllocateEncryptedDemuxPacket(unsigned int iDataSize,
+                                           unsigned int encryptedSubsampleCount)
+{
+  DEMUX_PACKET* ret(AllocateDemuxPacket(iDataSize));
+  if (ret && encryptedSubsampleCount > 0)
+  {
+    ret->cryptoInfo = new DEMUX_CRYPTO_INFO();
+    ret->cryptoInfo->numSubSamples = encryptedSubsampleCount;
+    ret->cryptoInfo->flags = 0;
+    ret->cryptoInfo->clearBytes = new uint16_t[encryptedSubsampleCount];
+    ret->cryptoInfo->cipherBytes = new uint32_t[encryptedSubsampleCount];
+  }
+  return ret;
+}

@@ -14,41 +14,49 @@
 #include <kodi/addon-instance/Inputstream.h>
 #include <kodi/addon-instance/VideoCodec.h>
 
+void FreeDemuxPacket(DEMUX_PACKET* pPacket);
+
+DEMUX_PACKET* AllocateDemuxPacket(int iDataSize);
+
+DEMUX_PACKET* AllocateEncryptedDemuxPacket(unsigned int iDataSize,
+                                           unsigned int encryptedSubsampleCount);
+
 /*******************************************************/
 /*                     InputStream                     */
 /*******************************************************/
 
-class ATTR_DLL_LOCAL CInputStreamAdaptive : public kodi::addon::CInstanceInputStream
+class ATTR_DLL_LOCAL CInputStreamAdaptive //: public kodi::addon::CInstanceInputStream
 {
 public:
-  CInputStreamAdaptive(const kodi::addon::IInstanceInfo& instance);
-  ADDON_STATUS CreateInstance(const kodi::addon::IInstanceInfo& instance,
-                              KODI_ADDON_INSTANCE_HDL& hdl) override;
+  CInputStreamAdaptive();
+  // ADDON_STATUS CreateInstance(const kodi::addon::IInstanceInfo& instance,
+  //                             KODI_ADDON_INSTANCE_HDL& hdl) override;
 
-  bool Open(const kodi::addon::InputstreamProperty& props) override;
-  void Close() override;
-  bool GetStreamIds(std::vector<unsigned int>& ids) override;
-  void GetCapabilities(kodi::addon::InputstreamCapabilities& caps) override;
-  bool GetStream(int streamid, kodi::addon::InputstreamInfo& info) override;
-  void EnableStream(int streamid, bool enable) override;
-  bool OpenStream(int streamid) override;
-  DEMUX_PACKET* DemuxRead() override;
-  bool DemuxSeekTime(double time, bool backwards, double& startpts) override;
+  //bool Open(const kodi::addon::InputstreamProperty& props) override;
+  bool Open(const std::string url, std::map<std::string, std::string> props);
+  void Close();
+  bool GetStreamIds(std::vector<unsigned int>& ids);
+  void GetCapabilities(kodi::addon::InputstreamCapabilities& caps);
+  bool GetStream(int streamid, kodi::addon::InputstreamInfo& info);
+  void EnableStream(int streamid, bool enable);
+  bool OpenStream(int streamid);
+  DEMUX_PACKET* DemuxRead();
+  bool DemuxSeekTime(double time, bool backwards, double& startpts);
   void SetVideoResolution(unsigned int width,
                           unsigned int height,
                           unsigned int maxWidth,
-                          unsigned int maxHeight) override;
-  bool PosTime(int ms) override;
-  int GetTotalTime() override;
-  int GetTime() override;
-  bool IsRealTimeStream() override;
+                          unsigned int maxHeight);
+  bool PosTime(int ms);
+  int GetTotalTime();
+  int GetTime();
+  bool IsRealTimeStream();
 
 #if INPUTSTREAM_VERSION_LEVEL > 1
-  int GetChapter() override;
-  int GetChapterCount() override;
-  const char* GetChapterName(int ch) override;
-  int64_t GetChapterPos(int ch) override;
-  bool SeekChapter(int ch) override;
+  int GetChapter();
+  int GetChapterCount();
+  const char* GetChapterName(int ch);
+  int64_t GetChapterPos(int ch);
+  bool SeekChapter(int ch);
 #endif
 
   std::shared_ptr<SESSION::CSession> GetSession() { return m_session; };
