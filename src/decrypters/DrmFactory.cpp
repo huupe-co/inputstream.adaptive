@@ -13,7 +13,11 @@
 #include "widevineandroid/WVDecrypter.h"
 #else
 #ifndef TARGET_DARWIN_EMBEDDED
+#ifndef STATIC_LIB_WITHOUT_DECRYPTOR
 #include "widevine/WVDecrypter.h"
+#else
+#include "widevine_huupe/WVDecrypter.h"
+#endif
 #endif
 #endif
 

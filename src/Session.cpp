@@ -102,8 +102,8 @@ void CSession::SetSupportedDecrypterURN(std::string& key_system)
     return;
   }
   //HUUPE
-  //m_decrypter = DRM::FACTORY::GetDecrypter(GetCryptoKeySystem());
-  m_decrypter = nullptr;
+  m_decrypter = DRM::FACTORY::GetDecrypter(GetCryptoKeySystem());
+  //m_decrypter = nullptr;
   if (!m_decrypter)
     return;
 

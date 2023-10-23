@@ -9,6 +9,7 @@ subdir('samplereader')
 subdir('utils')
 
 subdir('codechandler')
+subdir('decrypters')
 
 
 input_adaptive_sources += files(
