@@ -28,28 +28,27 @@ public:
 
   virtual bool Initialize() override { return true; };
 
-  virtual const char* SelectKeySytem(const char* keySystem) override
+  virtual std::string SelectKeySytem(std::string_view keySystem) override
   {
-    if (strcmp(keySystem, "com.widevine.alpha"))
-      return nullptr;
+    if (keySystem == "com.widevine.alpha")
+      return "urn:uuid:EDEF8BA9-79D6-4ACE-A3C8-27DCD51D21ED";
 
-    return "urn:uuid:EDEF8BA9-79D6-4ACE-A3C8-27DCD51D21ED";
+    return "";
   };
 
-  virtual bool OpenDRMSystem(const char* licenseURL,
-                             const AP4_DataBuffer& serverCertificate,
+  virtual bool OpenDRMSystem(std::string_view licenseURL,
+                             const std::vector<uint8_t>& serverCertificate,
                              const uint8_t config) override
   {
     m_licenseURL = licenseURL;
-    m_serverCertificate.reserve(serverCertificate.GetBufferSize());
-    memcpy(&m_serverCertificate[0], serverCertificate.GetData(), serverCertificate.GetBufferSize());
+    m_serverCertificate = serverCertificate;
     m_config = config;
     m_isOpen = true;
     return true;
   }
 
   virtual Adaptive_CencSingleSampleDecrypter* CreateSingleSampleDecrypter(
-      AP4_DataBuffer& pssh,
+      std::vector<uint8_t>& pssh,
       std::string_view optionalKeyParameter,
       std::string_view defaultKeyId,
       bool skipSessionMessage,
