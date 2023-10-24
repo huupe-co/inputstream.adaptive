@@ -331,6 +331,15 @@ PLAYLIST::PrepareRepStatus adaptive::CHLSTree::prepareRepresentation(PLAYLIST::C
 
         uint64_t duration = static_cast<uint64_t>(STRING::ToFloat(tagValue) * rep->GetTimescale());
         newSegment->m_duration = duration;
+
+        if (currentEncryptionType == EncryptionType::AES128 && psshSetPos == PSSHSET_POS_DEFAULT)
+        {
+          if (!m_currentKidUrl.empty())
+          {
+            psshSetPos = InsertPsshSet(StreamType::NOTYPE, period, adp, m_currentPssh,
+                                       m_currentDefaultKID, m_currentKidUrl, m_currentIV);
+          }
+        }
         newSegment->pssh_set_ = psshSetPos;
 
         currentSegStartPts += duration;
@@ -358,7 +367,7 @@ PLAYLIST::PrepareRepStatus adaptive::CHLSTree::prepareRepresentation(PLAYLIST::C
           // Try find the container type on the representation according to the file extension
           std::string url = URL::RemoveParameters(line);
           // Remove domain on absolute url, to not confuse top-level domain as extension
-          url = url.substr(URL::GetDomainUrl(url).size());
+          url = url.substr(URL::GetBaseDomain(url).size());
 
           std::string extension;
           size_t extPos = url.rfind('.');
@@ -405,18 +414,6 @@ PLAYLIST::PrepareRepStatus adaptive::CHLSTree::prepareRepresentation(PLAYLIST::C
         }
 
         newSegment->url = line;
-
-        if (currentEncryptionType == EncryptionType::AES128)
-        {
-          if (psshSetPos == PSSHSET_POS_DEFAULT)
-          {
-            psshSetPos = InsertPsshSet(StreamType::NOTYPE, period, adp, m_currentPssh,
-                                       m_currentDefaultKID, m_currentKidUrl, m_currentIV);
-            newSegment->pssh_set_ = psshSetPos;
-          }
-          else
-            period->InsertPSSHSet(newSegment->pssh_set_);
-        }
 
         newSegments.GetData().emplace_back(*newSegment);
         newSegment.reset();

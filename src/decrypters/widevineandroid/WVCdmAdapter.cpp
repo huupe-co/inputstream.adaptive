@@ -9,6 +9,8 @@
 #include "WVCdmAdapter.h"
 
 #include "WVDecrypter.h"
+#include "decrypters/Helpers.h"
+#include "utils/FileUtils.h"
 #include "utils/log.h"
 
 #include <jni/src/UUID.h>
@@ -18,39 +20,41 @@ using namespace DRM;
 using namespace jni;
 
 CWVCdmAdapterA::CWVCdmAdapterA(WV_KEYSYSTEM ks,
-                             const char* licenseURL,
-                             const AP4_DataBuffer& serverCert,
-                             CJNIMediaDrmOnEventListener* listener,
-                             CWVDecrypterA* host)
+                               std::string_view licenseURL,
+                               const std::vector<uint8_t>& serverCert,
+                               CJNIMediaDrmOnEventListener* listener,
+                               CWVDecrypterA* host)
   : m_keySystem(ks), m_mediaDrm(0), m_licenseUrl(licenseURL), m_host(host)
 {
-  std::string strBasePath = m_host->GetProfilePath();
-  char cSep = strBasePath.back();
-  strBasePath += ks == WIDEVINE ? "widevine" : ks == PLAYREADY ? "playready" : "wiseplay";
-  strBasePath += cSep;
-  kodi::vfs::CreateDirectory(strBasePath.c_str());
-
-  //Build up a CDM path to store decrypter specific stuff. Each domain gets it own path
-  const char* bspos(strchr(m_licenseUrl.c_str(), ':'));
-  if (!bspos || bspos[1] != '/' || bspos[2] != '/' || !(bspos = strchr(bspos + 3, '/')))
+  if (licenseURL.empty())
   {
-    LOG::Log(LOGERROR, "Unable to find protocol inside license URL");
+    LOG::LogF(LOGERROR, "No license URL path specified");
     return;
   }
-  if (bspos - m_licenseUrl.c_str() > 256)
-  {
-    LOG::Log(LOGERROR, "Length of license URL exeeds max. size of 256");
-    return;
-  }
-  char buffer[1024];
-  buffer[(bspos - m_licenseUrl.c_str()) * 2] = 0;
-  AP4_FormatHex(reinterpret_cast<const uint8_t*>(m_licenseUrl.c_str()),
-                bspos - m_licenseUrl.c_str(), buffer);
 
-  strBasePath += buffer;
-  strBasePath += cSep;
-  kodi::vfs::CreateDirectory(strBasePath.c_str());
-  m_strBasePath = strBasePath;
+  std::string drmName;
+  if (ks == WIDEVINE)
+    drmName = "widevine";
+  else if (ks == PLAYREADY)
+    drmName = "playready";
+  else if (ks == WISEPLAY)
+    drmName = "wiseplay";
+  else
+    drmName = "undefined";
+
+  // The license url come from license_key kodi property
+  // we have to kept only the url without the parameters specified after pipe "|" char
+  std::string licUrl = m_licenseUrl;
+  const size_t urlPipePos = licUrl.find('|');
+  if (urlPipePos != std::string::npos)
+    licUrl.erase(urlPipePos);
+
+  // Build up a CDM path to store decrypter specific stuff, each domain gets it own path
+  // the domain name is hashed to generate a short folder name
+  std::string basePath = FILESYS::PathCombine(m_host->GetProfilePath(), drmName);
+  basePath = FILESYS::PathCombine(basePath, DRM::GenerateUrlDomainHash(licUrl));
+  basePath += FILESYS::SEPARATOR;
+  m_strBasePath = basePath;
 
   int64_t mostSigBits(0), leastSigBits(0);
   const uint8_t* keySystem = GetKeySystem();
@@ -79,7 +83,7 @@ CWVCdmAdapterA::CWVCdmAdapterA(WV_KEYSYSTEM ks,
     return;
   }
 
-  std::vector<char> strDeviceId = m_mediaDrm->getPropertyByteArray("deviceUniqueId");
+  std::vector<uint8_t> strDeviceId = m_mediaDrm->getPropertyByteArray("deviceUniqueId");
   xbmc_jnienv()->ExceptionClear();
   std::string strSecurityLevel = m_mediaDrm->getPropertyString("securityLevel");
   xbmc_jnienv()->ExceptionClear();
@@ -90,10 +94,10 @@ CWVCdmAdapterA::CWVCdmAdapterA(WV_KEYSYSTEM ks,
   if (m_keySystem == WIDEVINE)
   {
     //m_mediaDrm->setPropertyString("sessionSharing", "enable");
-    if (serverCert.GetDataSize())
-      m_mediaDrm->setPropertyByteArray(
-          "serviceCertificate",
-          std::vector<char>(serverCert.GetData(), serverCert.GetData() + serverCert.GetDataSize()));
+    if (!serverCert.empty())
+    {
+      m_mediaDrm->setPropertyByteArray("serviceCertificate", serverCert);
+    }
     else
       LoadServiceCertificate();
 
@@ -108,7 +112,7 @@ CWVCdmAdapterA::CWVCdmAdapterA(WV_KEYSYSTEM ks,
   }
 
   LOG::Log(LOGDEBUG,
-           "MediaDrm initialized (Device unique ID size: %ld, System ID: %s, Security level: %s)",
+           "MediaDrm initialized (Device unique ID size: %zu, System ID: %s, Security level: %s)",
            strDeviceId.size(), strSystemId.c_str(), strSecurityLevel.c_str());
 
   if (m_licenseUrl.find('|') == std::string::npos)
@@ -141,7 +145,7 @@ CWVCdmAdapterA::~CWVCdmAdapterA()
 void CWVCdmAdapterA::LoadServiceCertificate()
 {
   std::string filename = m_strBasePath + "service_certificate";
-  char* data(nullptr);
+  uint8_t* data(nullptr);
   size_t sz(0);
   FILE* f = fopen(filename.c_str(), "rb");
 
@@ -150,7 +154,7 @@ void CWVCdmAdapterA::LoadServiceCertificate()
     fseek(f, 0L, SEEK_END);
     sz = ftell(f);
     fseek(f, 0L, SEEK_SET);
-    if (sz > 8 && (data = (char*)malloc(sz)))
+    if (sz > 8 && (data = (uint8_t*)malloc(sz)))
       fread(data, 1, sz, f);
     fclose(f);
   }
@@ -163,7 +167,7 @@ void CWVCdmAdapterA::LoadServiceCertificate()
 
     if (certTime < nowTime && nowTime - certTime < 86400)
       m_mediaDrm->setPropertyByteArray("serviceCertificate",
-                                       std::vector<char>(data + 8, data + sz));
+                                       std::vector<uint8_t>(data + 8, data + sz));
     else
       free(data), data = nullptr;
   }
@@ -181,7 +185,7 @@ void CWVCdmAdapterA::LoadServiceCertificate()
 
 void CWVCdmAdapterA::SaveServiceCertificate()
 {
-  std::vector<char> sc = m_mediaDrm->getPropertyByteArray("serviceCertificate");
+  const std::vector<uint8_t> sc = m_mediaDrm->getPropertyByteArray("serviceCertificate");
   if (xbmc_jnienv()->ExceptionCheck())
   {
     LOG::LogF(LOGWARNING, "Exception retrieving Service Certificate");
@@ -202,7 +206,7 @@ void CWVCdmAdapterA::SaveServiceCertificate()
     auto now = std::chrono::system_clock::now();
     uint64_t nowTime =
         std::chrono::time_point_cast<std::chrono::seconds>(now).time_since_epoch().count();
-    fwrite((char*)&nowTime, 1, sizeof(uint64_t), f);
+    fwrite((uint8_t*)&nowTime, 1, sizeof(uint64_t), f);
     fwrite(sc.data(), 1, sc.size(), f);
     fclose(f);
   }

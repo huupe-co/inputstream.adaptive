@@ -193,7 +193,7 @@ std::string UTILS::URL::GetUrlPath(std::string url)
   return url;
 }
 
-void UTILS::URL::AppendParameters(std::string& url, std::string params)
+void UTILS::URL::AppendParameters(std::string& url, std::string_view params)
 {
   if (params.empty())
     return;
@@ -203,27 +203,29 @@ void UTILS::URL::AppendParameters(std::string& url, std::string params)
   else
     url += "&";
 
-  if (params.front() == '&' || params.front() == '?')
-    params.erase(params.begin());
-
-  url += params;
+  url += params.substr(params.front() == '&' || params.front() == '?' ? 1 : 0);
 }
 
-std::string UTILS::URL::GetDomainUrl(std::string url)
+std::string UTILS::URL::GetBaseDomain(std::string url)
 {
   if (IsUrlAbsolute(url))
   {
-    size_t paramsPos = url.find('?');
+    const size_t paramsPos = url.find('?');
     if (paramsPos != std::string::npos)
-      url = url.substr(0, paramsPos);
+      url.erase(paramsPos);
 
-    size_t slashPos = url.find_first_of('/', url.find("://") + 3);
-    if (slashPos != std::string::npos)
-      url = url.substr(0, slashPos);
-
-    if (url.back() == '/')
-      url.pop_back();
-
+    const size_t domainStartPos = url.find("://") + 3;
+    // Try remove url port number and path
+    const size_t port = url.find_first_of(':', domainStartPos);
+    if (port != std::string::npos)
+      url.erase(port);
+    else
+    {
+      // Try remove the path
+      const size_t slashPos = url.find_first_of('/', domainStartPos);
+      if (slashPos != std::string::npos)
+        url.erase(slashPos);
+    }
     return url;
   }
   return "";
@@ -264,7 +266,7 @@ std::string UTILS::URL::Join(std::string baseUrl, std::string relativeUrl)
   {
     skipRemovingSegs = false;
     relativeUrl.erase(0, 1);
-    std::string domain = GetDomainUrl(baseUrl);
+    std::string domain = GetBaseDomain(baseUrl);
     if (!domain.empty())
       baseUrl = domain + "/";
   }
