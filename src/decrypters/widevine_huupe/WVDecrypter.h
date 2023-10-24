@@ -44,6 +44,7 @@ public:
     m_serverCertificate.reserve(serverCertificate.GetBufferSize());
     memcpy(&m_serverCertificate[0], serverCertificate.GetData(), serverCertificate.GetBufferSize());
     m_config = config;
+    m_isOpen = true;
     return true;
   }
 
@@ -79,7 +80,7 @@ public:
     printf("Unhandled call");
     return true;
   }
-  virtual bool IsInitialised() override { return isOpen; }
+  virtual bool IsInitialised() override { return m_isOpen; }
   virtual std::string GetChallengeB64Data(Adaptive_CencSingleSampleDecrypter* decrypter) override
   {
     printf("Unhandled call");
@@ -127,7 +128,7 @@ private:
   std::string m_strLibraryPath;
 
   std::string m_licenseURL;
-  bool isOpen = false;
+  bool m_isOpen = false;
   std::vector<uint8_t> m_serverCertificate;
   uint8_t m_config;
 

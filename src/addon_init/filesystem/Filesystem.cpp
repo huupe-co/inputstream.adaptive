@@ -305,7 +305,9 @@ char* Interface_Filesystem::translate_special_protocol(void* kodiBase, const cha
 {
   //return strdup(CSpecialProtocol::TranslatePath(strSource).c_str());
   printf("translate_special_protocol!!!!!!!!!!");
-  return (char*)strSource;
+  char* trans = (char*)malloc(strlen(strSource) + 1);
+  strcpy(trans, strSource);
+  return trans;
 }
 
 bool Interface_Filesystem::get_disk_space(

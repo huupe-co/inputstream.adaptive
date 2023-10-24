@@ -98,7 +98,7 @@ extern "C" int debug_callback(
 
   while (it != vecLines.end())
   {
-    CLog::Log(LOGDEBUG, "Curl::Debug - {}{}", infotype, (*it));
+    //CLog::Log(LOGDEBUG, "Curl::Debug - {}{}", infotype, (*it));
     ++it;
   }
   return 0;

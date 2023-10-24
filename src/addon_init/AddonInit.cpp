@@ -168,7 +168,8 @@ bool FuncTable::get_setting_float(const KODI_ADDON_BACKEND_HDL hdl, const char* 
 bool FuncTable::get_setting_string(const KODI_ADDON_BACKEND_HDL hdl, const char* id, char** value)
 {
   std::map<std::string, std::string> values = {{"adaptivestream.res.max", "1080p"},
-                                               {"adaptivestream.res.secure.max", "640p"}};
+                                               {"adaptivestream.res.secure.max", "640p"},
+                                               {"DECRYPTERPATH", "/mnt/data/"}};
   if (values.contains(id))
   {
     auto val = values[id];
