@@ -169,7 +169,7 @@ void CInputStreamAdaptive::GetCapabilities(kodi::addon::InputstreamCapabilities&
 
 bool CInputStreamAdaptive::GetStream(int streamid, kodi::addon::InputstreamInfo& info)
 {
-  LOG::Log(LOGDEBUG, "GetStream(%d)", streamid);
+  //LOG::Log(LOGDEBUG, "GetStream(%d)", streamid);
 
   CStream* stream(m_session->GetStream(streamid - m_session->GetPeriodId() * 1000));
 
