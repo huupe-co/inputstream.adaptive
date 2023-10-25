@@ -58,6 +58,7 @@ Adaptive_CencSingleSampleDecrypter* CWVDecrypter::CreateSingleSampleDecrypter(
     bool skipSessionMessage,
     CryptoMode cryptoMode)
 {
+  LOG::LogF(LOGDEBUG, "CWVDecrypter CreateSingleSampleDecrypter.");
   CWVCencSingleSampleDecrypter* decrypter = new CWVCencSingleSampleDecrypter(
       *m_WVCdmAdapter, pssh, defaultKeyId, skipSessionMessage, cryptoMode, this);
   if (!decrypter->GetSessionId())
@@ -70,6 +71,7 @@ Adaptive_CencSingleSampleDecrypter* CWVDecrypter::CreateSingleSampleDecrypter(
 
 void CWVDecrypter::DestroySingleSampleDecrypter(Adaptive_CencSingleSampleDecrypter* decrypter)
 {
+  LOG::LogF(LOGDEBUG, "CWVDecrypter DestroySingleSampleDecrypter.");
   if (decrypter)
   {
     // close session before dispose
@@ -83,6 +85,7 @@ void CWVDecrypter::GetCapabilities(Adaptive_CencSingleSampleDecrypter* decrypter
                                    uint32_t media,
                                    IDecrypter::DecrypterCapabilites& caps)
 {
+  LOG::LogF(LOGDEBUG, "CWVDecrypter DestroySingleSampleDecrypter.");
   if (!decrypter)
   {
     caps = {0, 0, 0};
@@ -95,6 +98,7 @@ void CWVDecrypter::GetCapabilities(Adaptive_CencSingleSampleDecrypter* decrypter
 bool CWVDecrypter::HasLicenseKey(Adaptive_CencSingleSampleDecrypter* decrypter,
                                  std::string_view keyId)
 {
+  LOG::LogF(LOGDEBUG, "CWVDecrypter HasLicenseKey.");
   if (decrypter)
     return static_cast<CWVCencSingleSampleDecrypter*>(decrypter)->HasKeyId(keyId);
   return false;
@@ -102,6 +106,7 @@ bool CWVDecrypter::HasLicenseKey(Adaptive_CencSingleSampleDecrypter* decrypter,
 
 std::string CWVDecrypter::GetChallengeB64Data(Adaptive_CencSingleSampleDecrypter* decrypter)
 {
+  LOG::LogF(LOGDEBUG, "CWVDecrypter GetChallengeB64Data.");
   if (!decrypter)
     return "";
 
@@ -134,6 +139,7 @@ VIDEOCODEC_RETVAL CWVDecrypter::DecryptAndDecodeVideo(
 
 bool CWVDecrypter::Decrypt(const DEMUX_PACKET* sampleIn)
 {
+  LOG::LogF(LOGDEBUG, "CWVDecrypter Decrypt.");
   if (!m_decodingDecrypter)
     return false;
 

@@ -47,7 +47,7 @@ void CWVCencSingleSampleDecrypter::SetSession(const char* session,
                                               size_t dataSize)
 {
   std::lock_guard<std::mutex> lock(m_renewalLock);
-
+  LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter SetSession.");
   m_strSession = std::string(session, sessionSize);
   m_challenge.SetData(data, dataSize);
   LOG::LogF(LOGDEBUG, "Opened widevine session ID: %s", m_strSession.c_str());
@@ -118,12 +118,13 @@ CWVCencSingleSampleDecrypter::CWVCencSingleSampleDecrypter(CWVCdmAdapter& drm,
     psshAtom[3] = static_cast<uint8_t>(psshAtom.size());
     m_pssh = psshAtom;
   }
-
+  LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter. CWVCencSingleSampleDecrypter()");
   // drm.GetCdmAdapter()->CreateSessionAndGenerateRequest(
   //     m_promiseId++, widevine::Cdm::SessionType::kTemporary, widevine::Cdm::InitDataType::kCenc,
   //     m_pssh.data(), static_cast<uint32_t>(m_pssh.size()));
   widevine::Cdm::Status status =
       drm.GetCdmAdapter()->createSession(widevine::Cdm::SessionType::kTemporary, &m_strSession);
+  LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter. session %s", m_strSession.c_str());
   if (status != widevine::Cdm::kSuccess)
   {
     LOG::LogF(LOGERROR, "Failed to create a new session: error 0x%04x (%d)\n", status, status);
@@ -137,6 +138,7 @@ CWVCencSingleSampleDecrypter::CWVCencSingleSampleDecrypter(CWVCdmAdapter& drm,
     LOG::LogF(LOGERROR, "GenerateRequest failed");
   }
 
+  LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter. wait session %s", m_strSession.c_str());
   int retrycount = 0;
   while (m_strSession.empty() && ++retrycount < 100)
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -146,10 +148,11 @@ CWVCencSingleSampleDecrypter::CWVCencSingleSampleDecrypter(CWVCdmAdapter& drm,
     LOG::LogF(LOGERROR, "Cannot perform License update, no session available");
     return;
   }
-
+  LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter. wait session %s finish", m_strSession.c_str());
   if (skipSessionMessage)
     return;
 
+  LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter. SendSessionMessage", m_strSession.c_str());
   while (m_challenge.GetDataSize() > 0 && SendSessionMessage())
     ;
 }
@@ -163,6 +166,7 @@ void CWVCencSingleSampleDecrypter::GetCapabilities(std::string_view keyId,
                                                    uint32_t media,
                                                    IDecrypter::DecrypterCapabilites& caps)
 {
+  LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter GetCapabilities.");
   caps = {0, m_hdcpVersion, m_hdcpLimit};
 
   if (m_strSession.empty())
@@ -287,6 +291,8 @@ void CWVCencSingleSampleDecrypter::CheckLicenseRenewal()
 
 bool CWVCencSingleSampleDecrypter::SendSessionMessage()
 {
+  LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter. SendSessionMessage begin");
+
   std::vector<std::string> blocks{StringUtils::Split(m_wvCdmAdapter.GetLicenseURL(), '|')};
 
   if (blocks.size() != 4)
@@ -685,6 +691,7 @@ void CWVCencSingleSampleDecrypter::onMessage(widevine::Cdm::MessageType f_messag
     case widevine::Cdm::kLicenseRenewal:
     case widevine::Cdm::kLicenseRelease:
     {
+      LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter onMessage CheckLicenseRenewal");
       CheckLicenseRenewal();
       break;
     }
@@ -818,6 +825,7 @@ AP4_Result CWVCencSingleSampleDecrypter::DecryptSampleData(AP4_UI32 poolId,
                                                            const AP4_UI16* bytesOfCleartextData,
                                                            const AP4_UI32* bytesOfEncryptedData)
 {
+  LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter DecryptSampleData");
   if (!m_wvCdmAdapter.GetCdmAdapter())
   {
     dataOut.SetData(dataIn.GetData(), dataIn.GetDataSize());
@@ -1086,6 +1094,7 @@ AP4_Result CWVCencSingleSampleDecrypter::DecryptSampleData(AP4_UI32 poolId,
 
 bool CWVCencSingleSampleDecrypter::Decrypt(const DEMUX_PACKET* sampleIn)
 {
+  LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter Decrypt DEMUX_PACKET.");
   if (sampleIn->cryptoInfo == nullptr)
   {
     return true;

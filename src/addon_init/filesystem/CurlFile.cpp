@@ -98,7 +98,11 @@ extern "C" int debug_callback(
 
   while (it != vecLines.end())
   {
-    //CLog::Log(LOGDEBUG, "Curl::Debug - {}{}", infotype, (*it));
+    //HUUPPE
+    if (info != CURLINFO_SSL_DATA_IN && info != CURLINFO_SSL_DATA_OUT)
+    {
+      CLog::Log(LOGDEBUG, "Curl::Debug - {}{}", infotype, (*it));
+    }
     ++it;
   }
   return 0;

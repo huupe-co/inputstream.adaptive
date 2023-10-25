@@ -46,7 +46,7 @@ CWVCdmAdapter::CWVCdmAdapter(std::string_view licenseURL,
   std::string basePath = FILESYS::PathCombine(m_host->GetProfilePath(), "widevine");
   basePath = FILESYS::PathCombine(basePath, DRM::GenerateUrlDomainHash(licUrl));
   basePath += FILESYS::SEPARATOR;
-
+  LOG::LogF(LOGERROR, "CWVCdmAdapter Initialize.");
   Initialize();
   // if (!serverCert.empty())
   //   wv_adapter->SetServerCertificate(0, serverCert.data(), serverCert.size());
@@ -96,12 +96,14 @@ void CWVCdmAdapter::onMessage(const std::string& session_id,
   std::vector<CWVCencSingleSampleDecrypter*>::iterator res =
       std::find_if(ssds.begin(), ssds.end(),
                    [session_id](auto it) { return std::string(it->GetSessionId()) == session_id; });
+  LOG::LogF(LOGERROR, "CWVCdmAdapter onMessage.");
   if (res != ssds.end())
     (*res)->onMessage(f_messageType, f_message);
 }
 
 void CWVCdmAdapter::onKeyStatusesChange(const std::string& session_id, bool has_new_usable_key)
 {
+  LOG::LogF(LOGERROR, "CWVCdmAdapter onKeyStatusesChange.");
 }
 
 void CWVCdmAdapter::onRemoveComplete(const std::string& session_id)
@@ -113,4 +115,5 @@ void CWVCdmAdapter::onRemoveComplete(const std::string& session_id)
 
   // if (index != _sessions.end())
   //   index->second->onRemoveComplete();
+  LOG::LogF(LOGERROR, "CWVCdmAdapter onRemoveComplete.");
 }
