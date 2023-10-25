@@ -16,7 +16,7 @@
 #ifndef STATIC_LIB_WITHOUT_DECRYPTOR
 #include "widevine/WVDecrypter.h"
 #else
-#include "widevine_huupe/WVDecrypter.h"
+#include "widevine_h/WVDecrypter.h"
 #endif
 #endif
 #endif

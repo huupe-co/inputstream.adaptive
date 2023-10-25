@@ -74,7 +74,7 @@ public:
   virtual bool OpenDRMSystem(std::string_view licenseURL,
                              const std::vector<uint8_t>& serverCertificate,
                              const uint8_t config) = 0;
-  
+
   /**
    * \brief Creates a Single Sample Decrypter for decrypting content 
    * \param pssh The PSSH for initialising the decrypter
@@ -149,6 +149,7 @@ public:
   virtual VIDEOCODEC_RETVAL DecryptAndDecodeVideo(kodi::addon::CInstanceVideoCodec* codecInstance,
                                                   const DEMUX_PACKET* sample) = 0;
 
+  virtual bool Decrypt(const DEMUX_PACKET* sampleIn) { return false; };
   /**
    * \brief Convert CDM video frame data to Kodi picture format
    * \param codecInstance The instance of VideoCodec to use
