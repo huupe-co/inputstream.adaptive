@@ -119,6 +119,12 @@ CWVCencSingleSampleDecrypter::CWVCencSingleSampleDecrypter(CWVCdmAdapter& drm,
     m_pssh = psshAtom;
   }
   LOG::LogF(LOGDEBUG, "CWVCencSingleSampleDecrypter. CWVCencSingleSampleDecrypter()");
+
+  if (drm.GetCdmAdapter()->getProvisioningStatus() != widevine::Cdm::kProvisioned)
+  {
+    LOG::LogF(LOGERROR, "CDM isn't provisioned");
+    return;
+  }
   // drm.GetCdmAdapter()->CreateSessionAndGenerateRequest(
   //     m_promiseId++, widevine::Cdm::SessionType::kTemporary, widevine::Cdm::InitDataType::kCenc,
   //     m_pssh.data(), static_cast<uint32_t>(m_pssh.size()));
